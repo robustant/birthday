@@ -1,0 +1,865 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>我们的聊天纪念册</title>
+<script>window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
+<script src="https://cdn.plot.ly/plotly-3.6.0.min.js" integrity="sha256-QaOVwtVY0T02VaHrr6pnoHLCwayMJp4O5n4YyaE3rJk=" crossorigin="anonymous"></script>
+<style>
+:root{
+  --pink:#ff5f8f;--purple:#8b5cf6;--text:#2f2430;--muted:#7c6f7b;
+  --card:rgba(255,255,255,.76);--border:rgba(255,255,255,.7);
+  --slide-width:min(900px,calc(100vw - 32px));
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  margin:0;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  color:var(--text);background:linear-gradient(135deg,#fff7fb 0%,#fff 46%,#f7f1ff 100%);
+  height:100vh;width:100vw;user-select:none;-webkit-user-select:none;
+}
+/* ---------- 滑动舞台 ---------- */
+.stage{
+  width:100%;height:100vh;position:relative;overflow:hidden;
+}
+.slider{
+  display:flex;flex-direction:row;height:100%;
+  transition:transform .55s cubic-bezier(.4,0,.2,1);
+  will-change:transform;
+}
+.slide{
+  flex:0 0 100vw;height:100vh;overflow-y:auto;overflow-x:hidden;
+  display:flex;align-items:center;justify-content:center;
+  padding:20px 16px;
+}
+.slide-inner{
+  width:var(--slide-width);max-height:90vh;overflow-y:auto;
+  padding:16px 0;
+  scrollbar-width:none;-ms-overflow-style:none;
+}
+.slide-inner::-webkit-scrollbar{display:none}
+/* ---------- 入场动画 ---------- */
+.anim-up{
+  opacity:0;transform:translateY(36px);
+  animation:fadeInUp .7s cubic-bezier(.25,.46,.45,.94) forwards;
+}
+@keyframes fadeInUp{to{opacity:1;transform:translateY(0)}}
+.anim-pop{animation:popIn .45s cubic-bezier(.68,-.55,.27,1.55) forwards;opacity:0;display:inline-block}
+@keyframes popIn{to{opacity:1;transform:scale(1)}from{opacity:0;transform:scale(.3)}}
+.anim-left{opacity:0;transform:translateX(-30px);
+  animation:slideInLeft .55s ease-out forwards;
+}
+@keyframes slideInLeft{to{opacity:1;transform:translateX(0)}}
+/* ---------- 封面 ---------- */
+.cover{text-align:center}
+.cover .eyebrow{color:var(--pink);font-weight:700;letter-spacing:.14em;font-size:14px;animation:fadeInUp .7s .1s both}
+.cover h1{margin:14px 0 10px;font-size:clamp(36px,6vw,72px);line-height:1.08;animation:fadeInUp .7s .25s both}
+.cover .subtitle{max-width:600px;margin:0 auto 34px;color:var(--muted);font-size:17px;line-height:1.7;animation:fadeInUp .7s .4s both}
+.cover .btn-start{
+  display:inline-block;padding:14px 44px;border-radius:999px;border:none;
+  background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;
+  font-size:18px;font-weight:700;cursor:pointer;letter-spacing:.04em;
+  animation:fadeInUp .7s .55s both;
+  transition:transform .2s,box-shadow .2s;
+}
+.cover .btn-start:hover{transform:scale(1.06);box-shadow:0 12px 36px rgba(255,95,143,.32)}
+/* ---------- 卡片 ---------- */
+.card{
+  background:var(--card);border:1px solid var(--border);border-radius:24px;
+  padding:22px;box-shadow:0 18px 50px rgba(115,72,123,.12);backdrop-filter:blur(12px);
+}
+.card-glass{
+  background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.72);
+  border-radius:20px;padding:18px;backdrop-filter:blur(8px);
+}
+h2{font-size:clamp(20px,3.5vw,28px);margin:0 0 14px;font-weight:800}
+.big-num{font-size:clamp(34px,5vw,52px);font-weight:900;color:var(--purple)}
+.stat-val{font-size:clamp(28px,4vw,38px);font-weight:800;color:var(--pink)}
+.stat-lbl{color:var(--muted);font-size:14px;margin-top:4px}
+.muted{color:var(--muted)}
+/* ---------- 网格 ---------- */
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 0}
+.grid2{display:grid;grid-template-columns:1.3fr .7fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.grid2e{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+/* ---------- 标签 ---------- */
+.tag{
+  display:inline-block;margin:5px 5px 0 0;padding:7px 12px;border-radius:999px;
+  color:#fff;background:linear-gradient(135deg,var(--pink),var(--purple));
+  font-size:13px;animation:popIn .4s cubic-bezier(.68,-.55,.27,1.55) both;
+}
+.tag.soft{color:var(--text);background:rgba(255,255,255,.72);border:1px solid rgba(255,95,143,.22)}
+/* ---------- 时间线 ---------- */
+.timeline{position:relative;padding-left:18px}
+.timeline-item{border-left:3px solid rgba(255,95,143,.34);padding:0 0 14px 16px;animation:slideInLeft .5s ease-out both}
+.timeline-time{color:var(--purple);font-weight:700;font-size:13px}
+.timeline-title{font-weight:800;margin:2px 0}
+.timeline-text{color:var(--muted);font-size:14px}
+/* ---------- 气泡散落 ---------- */
+.bubble-scatter{
+  display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;
+  gap:16px;padding:10px 0;
+}
+.bubble{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:18px 22px;border-radius:50%;min-width:100px;min-height:100px;
+  text-align:center;cursor:default;
+  box-shadow:0 8px 28px rgba(255,95,143,.18);
+  animation:bubbleFloat 3.6s ease-in-out infinite,popIn .5s cubic-bezier(.68,-.55,.27,1.55) both;
+  transition:transform .3s,box-shadow .3s;
+}
+.bubble:hover{transform:scale(1.12);box-shadow:0 14px 36px rgba(139,92,246,.28);z-index:2}
+.bubble-pink{
+  background:linear-gradient(135deg,rgba(255,255,255,.9),rgba(255,225,235,.9));
+  border:2px solid rgba(255,95,143,.35);color:var(--text);
+}
+.bubble-purple{
+  background:linear-gradient(135deg,rgba(255,255,255,.9),rgba(235,225,255,.9));
+  border:2px solid rgba(139,92,246,.35);color:var(--text);
+}
+.bubble-gold{
+  background:linear-gradient(135deg,rgba(255,255,255,.9),rgba(255,243,210,.9));
+  border:2px solid rgba(255,179,71,.4);color:var(--text);
+}
+.bubble-large{min-width:130px;min-height:130px;padding:24px 20px;font-size:15px}
+.bubble-medium{min-width:105px;min-height:105px;padding:16px 14px;font-size:13px}
+.bubble-small{min-width:80px;min-height:80px;padding:12px 10px;font-size:11px}
+.bubble-time{font-size:11px;color:var(--purple);font-weight:700;margin-bottom:3px}
+.bubble-title{font-weight:800;font-size:13px;margin-bottom:2px;line-height:1.3}
+.bubble-text{color:var(--muted);font-size:11px;line-height:1.3;max-width:100px}
+.bubble-tag{
+  display:inline-flex;align-items:center;justify-content:center;
+  border-radius:50%;color:#fff;font-weight:700;text-align:center;
+  animation:bubbleFloat 4s ease-in-out infinite,popIn .45s cubic-bezier(.68,-.55,.27,1.55) both;
+  cursor:default;transition:transform .3s;
+}
+.bubble-tag:hover{transform:scale(1.15);z-index:2}
+@keyframes bubbleFloat{
+  0%,100%{transform:translateY(0)}
+  25%{transform:translateY(-8px)}
+  75%{transform:translateY(4px)}
+}
+/* ---------- 回忆卡片（保留） ---------- */
+.memory-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.memory-card{
+  padding:14px;border-radius:18px;background:rgba(255,255,255,.68);
+  border:1px solid rgba(255,255,255,.82);font-size:14px;
+  animation:fadeInUp .5s ease-out both;
+}
+.memory-meta{color:var(--purple);font-size:12px;font-weight:700;margin-bottom:5px}
+/* ---------- 盲盒按钮 ---------- */
+.btn-reroll{
+  display:inline-block;padding:12px 32px;border-radius:999px;border:none;
+  background:linear-gradient(135deg,#ffb347,#ff5f8f);color:#fff;
+  font-size:16px;font-weight:700;cursor:pointer;letter-spacing:.04em;
+  margin-bottom:18px;
+  transition:transform .2s,box-shadow .2s;
+  animation:fadeInUp .5s ease-out both;
+}
+.btn-reroll:hover{transform:scale(1.06);box-shadow:0 10px 30px rgba(255,95,143,.32)}
+.btn-reroll:active{transform:scale(.96)}
+@keyframes spinPop{
+  0%{opacity:0;transform:scale(.4) rotate(-10deg)}
+  60%{transform:scale(1.08) rotate(2deg)}
+  100%{opacity:1;transform:scale(1) rotate(0deg)}
+}
+.bubble-spin{animation:spinPop .5s cubic-bezier(.68,-.55,.27,1.55) both}
+/* ---------- 情书 ---------- */
+.letter{
+  font-size:16px;padding:28px;border-radius:28px;
+  background:linear-gradient(135deg,rgba(255,255,255,.84),rgba(255,239,247,.84));
+  border:1px solid rgba(255,255,255,.86);line-height:1.9;
+}
+.letter p{margin-bottom:14px}
+/* ---------- 生日祝福页 ---------- */
+.birthday-page{
+  text-align:center;position:relative;overflow:hidden;
+  background:linear-gradient(180deg,#fff0f5 0%,#fdf2ff 50%,#fff5f5 100%);
+  border-radius:32px;padding:40px 20px;min-height:420px;
+}
+.birthday-title{font-size:clamp(28px,5vw,44px);font-weight:900;color:var(--pink)}
+.birthday-name{font-size:clamp(36px,7vw,60px);font-weight:900;
+  background:linear-gradient(135deg,var(--pink),var(--purple));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;margin:10px 0;
+}
+.birthday-msg{font-size:16px;color:var(--muted);max-width:500px;margin:16px auto;line-height:1.8}
+/* 爱心粒子 */
+.hearts{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.heart{
+  position:absolute;font-size:20px;animation:floatUp 4s linear infinite;
+  opacity:.7;color:var(--pink);
+}
+@keyframes floatUp{
+  0%{transform:translateY(110vh) scale(0) rotate(0deg);opacity:1}
+  80%{opacity:.6}
+  100%{transform:translateY(-10vh) scale(1.2) rotate(360deg);opacity:0}
+}
+/* 烟花粒子 */
+.firework{position:absolute;width:6px;height:6px;border-radius:50%;animation:burst 1.6s ease-out forwards;pointer-events:none}
+@keyframes burst{
+  0%{transform:translate(0,0) scale(1);opacity:1}
+  100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}
+}
+/* ---------- 导航 ---------- */
+.nav-bar{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:center;
+  gap:8px;padding:18px 16px;background:linear-gradient(0deg,rgba(255,255,255,.92),transparent);
+  pointer-events:none;
+}
+.nav-bar>*{pointer-events:auto}
+.dot{
+  width:10px;height:10px;border-radius:50%;background:rgba(180,160,180,.38);
+  cursor:pointer;transition:all .3s;border:none;padding:0;
+}
+.dot.active{background:var(--pink);width:28px;border-radius:6px}
+.btn-nav{
+  padding:8px 18px;border-radius:999px;border:none;
+  background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;
+  font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.03em;
+  transition:transform .2s,box-shadow .2s,opacity .3s;
+}
+.btn-nav:hover{transform:scale(1.05);box-shadow:0 8px 24px rgba(255,95,143,.28)}
+.btn-nav:disabled{opacity:.35;cursor:default;transform:none;box-shadow:none}
+/* ---------- 提示 ---------- */
+.hint{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:99;
+  background:rgba(0,0,0,.72);color:#fff;padding:8px 18px;border-radius:999px;
+  font-size:13px;opacity:0;transition:opacity .5s;pointer-events:none;
+}
+.hint.show{opacity:1}
+/* ---------- 响应式 ---------- */
+@media(max-width:768px){
+  .grid4,.grid3,.grid2,.grid2e,.memory-grid{grid-template-columns:1fr}
+  .slide{padding:10px 8px}
+  .birthday-page{padding:24px 14px;min-height:360px}
+  .btn-nav{padding:10px 24px;font-size:15px}
+}
+@media(min-width:769px){
+  .btn-nav.prev{position:fixed;left:20px;bottom:50%;transform:translateY(50%);z-index:99;padding:12px 16px}
+  .btn-nav.next{position:fixed;right:20px;bottom:50%;transform:translateY(50%);z-index:99;padding:12px 16px}
+}
+</style>
+</head>
+<body>
+<div class="hint" id="hint">按 ← → 方向键或滑动屏幕翻页</div>
+<div class="stage">
+<div class="slider" id="slider">
+
+<!-- ====== 第1页：封面 ====== -->
+<div class="slide" data-index="0">
+<div class="slide-inner cover">
+  <div class="eyebrow anim-up" style="animation-delay:.1s">LOVE DATA REPORT</div>
+  <h1 class="anim-up" style="animation-delay:.25s">我们的聊天纪念册</h1>
+  <p class="subtitle anim-up" style="animation-delay:.4s">
+    从 2025年09月18日 到 2026年06月29日，<br/>
+    每一天的早安、晚安、想念和欢笑，<br/>都被悄悄记在了这里。
+  </p>
+   <button class="btn-start anim-up" style="animation-delay:.55s" id="btnStart">✨ 开始翻阅我们的故事</button>
+</div>
+</div>
+
+<!-- ====== 第2页：数据总览 ====== -->
+<div class="slide" data-index="1">
+<div class="slide-inner">
+  <h2 class="anim-up" style="animation-delay:0s">📊 数据总览</h2>
+  <p class="muted anim-up" style="animation-delay:.15s;margin-bottom:12px">这是我们一起走过的数字印记</p>
+  <div class="grid4">
+    <div class="card anim-up" style="animation-delay:.2s">
+      <div class="stat-val" data-count="63174">0</div>
+      <div class="stat-lbl">总消息数</div>
+    </div>
+    <div class="card anim-up" style="animation-delay:.3s">
+      <div class="stat-val" data-count="281">0</div>
+      <div class="stat-lbl">有聊天的日子</div>
+    </div>
+    <div class="card anim-up" style="animation-delay:.4s">
+      <div class="stat-val" data-count="278">0</div>
+      <div class="stat-lbl">最长连续聊天天数</div>
+    </div>
+    <div class="card anim-up" style="animation-delay:.5s">
+      <div class="stat-val" data-count="32281">0</div>
+      <div class="stat-lbl">累计心动值</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ====== 第3页：甜度曲线 ====== -->
+<div class="slide" data-index="2">
+<div class="slide-inner">
+  <h2 class="anim-up" style="animation-delay:0s">💕 甜度曲线</h2>
+  <div class="grid2">
+    <div class="card anim-up" style="animation-delay:.15s">
+      <div style="height:480px; width:100%;">
+        <div id="eb870060-1ebb-408d-b56d-4c0993b58976" class="plotly-graph-div" style="height:100%; width:100%;"></div>
+        <script>
+          window.PLOTLYENV=window.PLOTLYENV || {};
+          if (document.getElementById("eb870060-1ebb-408d-b56d-4c0993b58976")) { try {
+            Plotly.newPlot(
+              "eb870060-1ebb-408d-b56d-4c0993b58976",
+              [{"line":{"color":"#ff5f8f","width":2},"mode":"lines+markers","name":"\u6bcf\u65e5\u5fc3\u52a8\u503c","x":["2025-09-18T00:00:00","2025-09-22T00:00:00","2025-09-23T00:00:00","2025-09-25T00:00:00","2025-09-26T00:00:00","2025-09-27T00:00:00","2025-09-28T00:00:00","2025-09-29T00:00:00","2025-09-30T00:00:00","2025-10-01T00:00:00","2025-10-02T00:00:00","2025-10-03T00:00:00","2025-10-04T00:00:00","2025-10-05T00:00:00","2025-10-06T00:00:00","2025-10-07T00:00:00","2025-10-08T00:00:00","2025-10-09T00:00:00","2025-10-10T00:00:00","2025-10-11T00:00:00","2025-10-12T00:00:00","2025-10-13T00:00:00","2025-10-14T00:00:00","2025-10-15T00:00:00","2025-10-16T00:00:00","2025-10-17T00:00:00","2025-10-18T00:00:00","2025-10-19T00:00:00","2025-10-20T00:00:00","2025-10-21T00:00:00","2025-10-22T00:00:00","2025-10-23T00:00:00","2025-10-24T00:00:00","2025-10-25T00:00:00","2025-10-26T00:00:00","2025-10-27T00:00:00","2025-10-28T00:00:00","2025-10-29T00:00:00","2025-10-30T00:00:00","2025-10-31T00:00:00","2025-11-01T00:00:00","2025-11-02T00:00:00","2025-11-03T00:00:00","2025-11-04T00:00:00","2025-11-05T00:00:00","2025-11-06T00:00:00","2025-11-07T00:00:00","2025-11-08T00:00:00","2025-11-09T00:00:00","2025-11-10T00:00:00","2025-11-11T00:00:00","2025-11-12T00:00:00","2025-11-13T00:00:00","2025-11-14T00:00:00","2025-11-15T00:00:00","2025-11-16T00:00:00","2025-11-17T00:00:00","2025-11-18T00:00:00","2025-11-19T00:00:00","2025-11-20T00:00:00","2025-11-21T00:00:00","2025-11-22T00:00:00","2025-11-23T00:00:00","2025-11-24T00:00:00","2025-11-25T00:00:00","2025-11-26T00:00:00","2025-11-27T00:00:00","2025-11-28T00:00:00","2025-11-29T00:00:00","2025-11-30T00:00:00","2025-12-01T00:00:00","2025-12-02T00:00:00","2025-12-03T00:00:00","2025-12-04T00:00:00","2025-12-05T00:00:00","2025-12-06T00:00:00","2025-12-07T00:00:00","2025-12-08T00:00:00","2025-12-09T00:00:00","2025-12-10T00:00:00","2025-12-11T00:00:00","2025-12-12T00:00:00","2025-12-13T00:00:00","2025-12-14T00:00:00","2025-12-15T00:00:00","2025-12-16T00:00:00","2025-12-17T00:00:00","2025-12-18T00:00:00","2025-12-19T00:00:00","2025-12-20T00:00:00","2025-12-21T00:00:00","2025-12-22T00:00:00","2025-12-23T00:00:00","2025-12-24T00:00:00","2025-12-25T00:00:00","2025-12-26T00:00:00","2025-12-27T00:00:00","2025-12-28T00:00:00","2025-12-29T00:00:00","2025-12-30T00:00:00","2025-12-31T00:00:00","2026-01-01T00:00:00","2026-01-02T00:00:00","2026-01-03T00:00:00","2026-01-04T00:00:00","2026-01-05T00:00:00","2026-01-06T00:00:00","2026-01-07T00:00:00","2026-01-08T00:00:00","2026-01-09T00:00:00","2026-01-10T00:00:00","2026-01-11T00:00:00","2026-01-12T00:00:00","2026-01-13T00:00:00","2026-01-14T00:00:00","2026-01-15T00:00:00","2026-01-16T00:00:00","2026-01-17T00:00:00","2026-01-18T00:00:00","2026-01-19T00:00:00","2026-01-20T00:00:00","2026-01-21T00:00:00","2026-01-22T00:00:00","2026-01-23T00:00:00","2026-01-24T00:00:00","2026-01-25T00:00:00","2026-01-26T00:00:00","2026-01-27T00:00:00","2026-01-28T00:00:00","2026-01-29T00:00:00","2026-01-30T00:00:00","2026-01-31T00:00:00","2026-02-01T00:00:00","2026-02-02T00:00:00","2026-02-03T00:00:00","2026-02-04T00:00:00","2026-02-05T00:00:00","2026-02-06T00:00:00","2026-02-07T00:00:00","2026-02-08T00:00:00","2026-02-09T00:00:00","2026-02-10T00:00:00","2026-02-11T00:00:00","2026-02-12T00:00:00","2026-02-13T00:00:00","2026-02-14T00:00:00","2026-02-15T00:00:00","2026-02-16T00:00:00","2026-02-17T00:00:00","2026-02-18T00:00:00","2026-02-19T00:00:00","2026-02-20T00:00:00","2026-02-21T00:00:00","2026-02-22T00:00:00","2026-02-23T00:00:00","2026-02-24T00:00:00","2026-02-25T00:00:00","2026-02-26T00:00:00","2026-02-27T00:00:00","2026-02-28T00:00:00","2026-03-01T00:00:00","2026-03-02T00:00:00","2026-03-03T00:00:00","2026-03-04T00:00:00","2026-03-05T00:00:00","2026-03-06T00:00:00","2026-03-07T00:00:00","2026-03-08T00:00:00","2026-03-09T00:00:00","2026-03-10T00:00:00","2026-03-11T00:00:00","2026-03-12T00:00:00","2026-03-13T00:00:00","2026-03-14T00:00:00","2026-03-15T00:00:00","2026-03-16T00:00:00","2026-03-17T00:00:00","2026-03-18T00:00:00","2026-03-19T00:00:00","2026-03-20T00:00:00","2026-03-21T00:00:00","2026-03-22T00:00:00","2026-03-23T00:00:00","2026-03-24T00:00:00","2026-03-25T00:00:00","2026-03-26T00:00:00","2026-03-27T00:00:00","2026-03-28T00:00:00","2026-03-29T00:00:00","2026-03-30T00:00:00","2026-03-31T00:00:00","2026-04-01T00:00:00","2026-04-02T00:00:00","2026-04-03T00:00:00","2026-04-04T00:00:00","2026-04-05T00:00:00","2026-04-06T00:00:00","2026-04-07T00:00:00","2026-04-08T00:00:00","2026-04-09T00:00:00","2026-04-10T00:00:00","2026-04-11T00:00:00","2026-04-12T00:00:00","2026-04-13T00:00:00","2026-04-14T00:00:00","2026-04-15T00:00:00","2026-04-16T00:00:00","2026-04-17T00:00:00","2026-04-18T00:00:00","2026-04-19T00:00:00","2026-04-20T00:00:00","2026-04-21T00:00:00","2026-04-22T00:00:00","2026-04-23T00:00:00","2026-04-24T00:00:00","2026-04-25T00:00:00","2026-04-26T00:00:00","2026-04-27T00:00:00","2026-04-28T00:00:00","2026-04-29T00:00:00","2026-04-30T00:00:00","2026-05-01T00:00:00","2026-05-02T00:00:00","2026-05-03T00:00:00","2026-05-04T00:00:00","2026-05-05T00:00:00","2026-05-06T00:00:00","2026-05-07T00:00:00","2026-05-08T00:00:00","2026-05-09T00:00:00","2026-05-10T00:00:00","2026-05-11T00:00:00","2026-05-12T00:00:00","2026-05-13T00:00:00","2026-05-14T00:00:00","2026-05-15T00:00:00","2026-05-16T00:00:00","2026-05-17T00:00:00","2026-05-18T00:00:00","2026-05-19T00:00:00","2026-05-20T00:00:00","2026-05-21T00:00:00","2026-05-22T00:00:00","2026-05-23T00:00:00","2026-05-24T00:00:00","2026-05-25T00:00:00","2026-05-26T00:00:00","2026-05-27T00:00:00","2026-05-28T00:00:00","2026-05-29T00:00:00","2026-05-30T00:00:00","2026-05-31T00:00:00","2026-06-01T00:00:00","2026-06-02T00:00:00","2026-06-03T00:00:00","2026-06-04T00:00:00","2026-06-05T00:00:00","2026-06-06T00:00:00","2026-06-07T00:00:00","2026-06-08T00:00:00","2026-06-09T00:00:00","2026-06-10T00:00:00","2026-06-11T00:00:00","2026-06-12T00:00:00","2026-06-13T00:00:00","2026-06-14T00:00:00","2026-06-15T00:00:00","2026-06-16T00:00:00","2026-06-17T00:00:00","2026-06-18T00:00:00","2026-06-19T00:00:00","2026-06-20T00:00:00","2026-06-21T00:00:00","2026-06-22T00:00:00","2026-06-23T00:00:00","2026-06-24T00:00:00","2026-06-25T00:00:00","2026-06-26T00:00:00","2026-06-27T00:00:00","2026-06-28T00:00:00","2026-06-29T00:00:00"],"y":{"dtype":"i2","bdata":"AAA5AAQAVwBCADQAKgBaAHIAOwAAAF0AFQAAAMMAQgBZAPYAUgAuAAwADABdAIoAFQHSAIsAngBLAGsBUgDaAMIAAQEGAHsADgBfAGEACwFmAHAAbgAlAYMAggB+AAAACwC+AMEANwBKAGcAaAAhAFAAYABMAJ4AUgBZANoAjgA+AJUALgAAAAAAtwBTAEkAQAAiAEEAHwAxAC4AcgC7AAwAWQBPAFgAAABKAAcAiwBkAIgAMwBRAJIAHABuAAYAKgAwAE4ANQA4ADcAJgAdABoAxwCmAFgAEwBQAHUAHwAUAFkABgAHADcAZwBLAGMAOwAHACAAiwA8Ab8AiABuADQBBwEaAbAAawFqAe4AcgGiAI4AbQA4ANQA3wDeAh4BvgGGAeUAKALyArMBUgEUAWQBAQHIAB8BqwDaAE0BJAFpASkCiQGgACUBEwFBAA8AUABmAGoANgBDAGYAHAAjADsAdADjAGUAaABhAEoAXgAzAD0ANgAAAFMAcwAlAG8AOgAmABgAKAAsACkAPQAXAEcAPgCHAAAAgAAAAAAAHQAYAE8AKQB8AFkALQALAAkAWwAxADsAcwBZACsAMQAkAEUALQBXAEYAdwA9AIwAAAB5ACwALgAiAFAAkwBBAGAAagArAUgAiwCHAJUANABKAE4AAQAqADoACwHZAHcAwAAxAHcAiwCyACwAGgASABIAGgAAAAAAAABfAFMAWwCqAJcAegA3ADYACgAaAGIAAAAlAA=="},"type":"scatter"},{"line":{"color":"#8b5cf6","width":3},"mode":"lines","name":"7\u65e5\u6e29\u67d4\u8d8b\u52bf","x":["2025-09-18T00:00:00","2025-09-22T00:00:00","2025-09-23T00:00:00","2025-09-25T00:00:00","2025-09-26T00:00:00","2025-09-27T00:00:00","2025-09-28T00:00:00","2025-09-29T00:00:00","2025-09-30T00:00:00","2025-10-01T00:00:00","2025-10-02T00:00:00","2025-10-03T00:00:00","2025-10-04T00:00:00","2025-10-05T00:00:00","2025-10-06T00:00:00","2025-10-07T00:00:00","2025-10-08T00:00:00","2025-10-09T00:00:00","2025-10-10T00:00:00","2025-10-11T00:00:00","2025-10-12T00:00:00","2025-10-13T00:00:00","2025-10-14T00:00:00","2025-10-15T00:00:00","2025-10-16T00:00:00","2025-10-17T00:00:00","2025-10-18T00:00:00","2025-10-19T00:00:00","2025-10-20T00:00:00","2025-10-21T00:00:00","2025-10-22T00:00:00","2025-10-23T00:00:00","2025-10-24T00:00:00","2025-10-25T00:00:00","2025-10-26T00:00:00","2025-10-27T00:00:00","2025-10-28T00:00:00","2025-10-29T00:00:00","2025-10-30T00:00:00","2025-10-31T00:00:00","2025-11-01T00:00:00","2025-11-02T00:00:00","2025-11-03T00:00:00","2025-11-04T00:00:00","2025-11-05T00:00:00","2025-11-06T00:00:00","2025-11-07T00:00:00","2025-11-08T00:00:00","2025-11-09T00:00:00","2025-11-10T00:00:00","2025-11-11T00:00:00","2025-11-12T00:00:00","2025-11-13T00:00:00","2025-11-14T00:00:00","2025-11-15T00:00:00","2025-11-16T00:00:00","2025-11-17T00:00:00","2025-11-18T00:00:00","2025-11-19T00:00:00","2025-11-20T00:00:00","2025-11-21T00:00:00","2025-11-22T00:00:00","2025-11-23T00:00:00","2025-11-24T00:00:00","2025-11-25T00:00:00","2025-11-26T00:00:00","2025-11-27T00:00:00","2025-11-28T00:00:00","2025-11-29T00:00:00","2025-11-30T00:00:00","2025-12-01T00:00:00","2025-12-02T00:00:00","2025-12-03T00:00:00","2025-12-04T00:00:00","2025-12-05T00:00:00","2025-12-06T00:00:00","2025-12-07T00:00:00","2025-12-08T00:00:00","2025-12-09T00:00:00","2025-12-10T00:00:00","2025-12-11T00:00:00","2025-12-12T00:00:00","2025-12-13T00:00:00","2025-12-14T00:00:00","2025-12-15T00:00:00","2025-12-16T00:00:00","2025-12-17T00:00:00","2025-12-18T00:00:00","2025-12-19T00:00:00","2025-12-20T00:00:00","2025-12-21T00:00:00","2025-12-22T00:00:00","2025-12-23T00:00:00","2025-12-24T00:00:00","2025-12-25T00:00:00","2025-12-26T00:00:00","2025-12-27T00:00:00","2025-12-28T00:00:00","2025-12-29T00:00:00","2025-12-30T00:00:00","2025-12-31T00:00:00","2026-01-01T00:00:00","2026-01-02T00:00:00","2026-01-03T00:00:00","2026-01-04T00:00:00","2026-01-05T00:00:00","2026-01-06T00:00:00","2026-01-07T00:00:00","2026-01-08T00:00:00","2026-01-09T00:00:00","2026-01-10T00:00:00","2026-01-11T00:00:00","2026-01-12T00:00:00","2026-01-13T00:00:00","2026-01-14T00:00:00","2026-01-15T00:00:00","2026-01-16T00:00:00","2026-01-17T00:00:00","2026-01-18T00:00:00","2026-01-19T00:00:00","2026-01-20T00:00:00","2026-01-21T00:00:00","2026-01-22T00:00:00","2026-01-23T00:00:00","2026-01-24T00:00:00","2026-01-25T00:00:00","2026-01-26T00:00:00","2026-01-27T00:00:00","2026-01-28T00:00:00","2026-01-29T00:00:00","2026-01-30T00:00:00","2026-01-31T00:00:00","2026-02-01T00:00:00","2026-02-02T00:00:00","2026-02-03T00:00:00","2026-02-04T00:00:00","2026-02-05T00:00:00","2026-02-06T00:00:00","2026-02-07T00:00:00","2026-02-08T00:00:00","2026-02-09T00:00:00","2026-02-10T00:00:00","2026-02-11T00:00:00","2026-02-12T00:00:00","2026-02-13T00:00:00","2026-02-14T00:00:00","2026-02-15T00:00:00","2026-02-16T00:00:00","2026-02-17T00:00:00","2026-02-18T00:00:00","2026-02-19T00:00:00","2026-02-20T00:00:00","2026-02-21T00:00:00","2026-02-22T00:00:00","2026-02-23T00:00:00","2026-02-24T00:00:00","2026-02-25T00:00:00","2026-02-26T00:00:00","2026-02-27T00:00:00","2026-02-28T00:00:00","2026-03-01T00:00:00","2026-03-02T00:00:00","2026-03-03T00:00:00","2026-03-04T00:00:00","2026-03-05T00:00:00","2026-03-06T00:00:00","2026-03-07T00:00:00","2026-03-08T00:00:00","2026-03-09T00:00:00","2026-03-10T00:00:00","2026-03-11T00:00:00","2026-03-12T00:00:00","2026-03-13T00:00:00","2026-03-14T00:00:00","2026-03-15T00:00:00","2026-03-16T00:00:00","2026-03-17T00:00:00","2026-03-18T00:00:00","2026-03-19T00:00:00","2026-03-20T00:00:00","2026-03-21T00:00:00","2026-03-22T00:00:00","2026-03-23T00:00:00","2026-03-24T00:00:00","2026-03-25T00:00:00","2026-03-26T00:00:00","2026-03-27T00:00:00","2026-03-28T00:00:00","2026-03-29T00:00:00","2026-03-30T00:00:00","2026-03-31T00:00:00","2026-04-01T00:00:00","2026-04-02T00:00:00","2026-04-03T00:00:00","2026-04-04T00:00:00","2026-04-05T00:00:00","2026-04-06T00:00:00","2026-04-07T00:00:00","2026-04-08T00:00:00","2026-04-09T00:00:00","2026-04-10T00:00:00","2026-04-11T00:00:00","2026-04-12T00:00:00","2026-04-13T00:00:00","2026-04-14T00:00:00","2026-04-15T00:00:00","2026-04-16T00:00:00","2026-04-17T00:00:00","2026-04-18T00:00:00","2026-04-19T00:00:00","2026-04-20T00:00:00","2026-04-21T00:00:00","2026-04-22T00:00:00","2026-04-23T00:00:00","2026-04-24T00:00:00","2026-04-25T00:00:00","2026-04-26T00:00:00","2026-04-27T00:00:00","2026-04-28T00:00:00","2026-04-29T00:00:00","2026-04-30T00:00:00","2026-05-01T00:00:00","2026-05-02T00:00:00","2026-05-03T00:00:00","2026-05-04T00:00:00","2026-05-05T00:00:00","2026-05-06T00:00:00","2026-05-07T00:00:00","2026-05-08T00:00:00","2026-05-09T00:00:00","2026-05-10T00:00:00","2026-05-11T00:00:00","2026-05-12T00:00:00","2026-05-13T00:00:00","2026-05-14T00:00:00","2026-05-15T00:00:00","2026-05-16T00:00:00","2026-05-17T00:00:00","2026-05-18T00:00:00","2026-05-19T00:00:00","2026-05-20T00:00:00","2026-05-21T00:00:00","2026-05-22T00:00:00","2026-05-23T00:00:00","2026-05-24T00:00:00","2026-05-25T00:00:00","2026-05-26T00:00:00","2026-05-27T00:00:00","2026-05-28T00:00:00","2026-05-29T00:00:00","2026-05-30T00:00:00","2026-05-31T00:00:00","2026-06-01T00:00:00","2026-06-02T00:00:00","2026-06-03T00:00:00","2026-06-04T00:00:00","2026-06-05T00:00:00","2026-06-06T00:00:00","2026-06-07T00:00:00","2026-06-08T00:00:00","2026-06-09T00:00:00","2026-06-10T00:00:00","2026-06-11T00:00:00","2026-06-12T00:00:00","2026-06-13T00:00:00","2026-06-14T00:00:00","2026-06-15T00:00:00","2026-06-16T00:00:00","2026-06-17T00:00:00","2026-06-18T00:00:00","2026-06-19T00:00:00","2026-06-20T00:00:00","2026-06-21T00:00:00","2026-06-22T00:00:00","2026-06-23T00:00:00","2026-06-24T00:00:00","2026-06-25T00:00:00","2026-06-26T00:00:00","2026-06-27T00:00:00","2026-06-28T00:00:00","2026-06-29T00:00:00"],"y":{"dtype":"f8","bdata":"AAAAAAAAAAAAAAAAAIA8QFVVVVVVVTRAAAAAAACAQkBmZmZmZmZFQKuqqqqqKkZAAAAAAAAARkDbtm3btm1MQAAAAAAAQFBAbtu2bds2UkBu27Zt2zZOQCVJkiRJElBA27Zt27btTUDbtm3btu1KQG7btm3bNlFAAAAAAAAAT0AlSZIkSZJQQLdt27ZtW1lAbtu2bdv2WEC3bdu2bdtZQJIkSZIkSVpAAAAAAADAU0Bu27Zt27ZUQG7btm3bdlZAJUmSJEmSV0BJkiRJkiRcQG7btm3bdl9Abtu2bdtWYkBu27Zt23ZjQJIkSZIkSWhAkiRJkiRJZ0C3bdu2bTtmQCVJkiRJ8mVA27Zt27YNaEBu27Zt21ZlQCVJkiRJMmZA27Zt27btX0AlSZIkSTJgQCVJkiRJElxA27Zt27atXkBJkiRJkiRZQNu2bdu27VxAbtu2bdt2XEBu27Zt2zZjQLdt27Zt22NAJUmSJElyZEDbtm3btu1hQLdt27ZtG2BAt23btm2bXEBu27Zt23ZfQEmSJEmS5FtA27Zt27YtWUDbtm3bti1XQLdt27ZtW1ZAJUmSJEkSWkC3bdu2bdtaQNu2bdu27VZAbtu2bdt2U0Bu27Zt2zZUQG7btm3bNldAbtu2bdt2VkDbtm3btu1VQJIkSZIkiVxAAAAAAADAXkCSJEmSJIldQCVJkiRJEmBASZIkSZIkXEBu27Zt2zZZQJIkSZIkCVZAkiRJkiTJVEDbtm3btq1SQCVJkiRJElNAkiRJkiQJUEBu27Zt2zZPQNu2bdu27VFAkiRJkiQJU0AAAAAAAIBMQLdt27Zt20lAkiRJkiTJTECSJEmSJMlSQAAAAAAAAFJAt23btm3bUkAlSZIkSZJUQG7btm3b9lVAJUmSJElSVEBJkiRJkuRSQNu2bdu27UhAAAAAAAAAUUBJkiRJkmRRQNu2bdu2bVNAt23btm0bUkAAAAAAAABVQCVJkiRJkldAJUmSJElSWECSJEmSJElXQNu2bdu27VNAJUmSJEmSUEBu27Zt23ZQQLdt27ZtW1BAJUmSJEkSSkAlSZIkSRJMQEmSJEmSJEhA27Zt27ZtSkAAAAAAAIBJQNu2bdu27UdAkiRJkiRJUEAlSZIkSVJUQG7btm3bdlVA27Zt27YtVEDbtm3btq1VQCVJkiRJ0lhAAAAAAAAAWUC3bdu2bZtSQG7btm3btk9At23btm3bSUAAAAAAAABJQG7btm3bNkdAbtu2bds2RkC3bdu2bVtJQAAAAAAAAE9At23btm3bTEDbtm3btu1MQG7btm3btk5At23btm1bUkBu27Zt2/ZdQLdt27ZtG15A27Zt27ZtX0AAAAAAAKBgQAAAAAAAAGZAAAAAAAAgakDbtm3btq1sQNu2bdu2LWpAAAAAAABAbUBJkiRJkqRwQJIkSZIkyXFAbtu2bdtWckAAAAAAAHBxQAAAAAAAMHBA27Zt27Ytb0AlSZIkSbJpQEmSJEmSBGdAAAAAAADAZkAAAAAAAEBtQG7btm3bdm9AJUmSJElyckBJkiRJkvR0QAAAAAAAgHZAkiRJkiSJeUBu27Zt20Z+QLdt27Ztm3tAJUmSJEkSfEDbtm3bto16QAAAAAAAQHpAAAAAAACAekC3bdu2bVt3QAAAAAAAMHNASZIkSZLUcEBJkiRJkoRvQEmSJEmSRHBASZIkSZJkb0AAAAAAAKBwQG7btm3bxnNAkiRJkiS5dEAAAAAAAKB0QLdt27ZtS3VAbtu2bdvGdEAAAAAAAMByQCVJkiRJUm9AAAAAAADgZkDbtm3btq1hQG7btm3btmBASZIkSZLkWEBu27Zt23ZRQJIkSZIkyVJAAAAAAABAU0BJkiRJkqRRQLdt27ZtG1BAbtu2bdt2UEBJkiRJkqRWQLdt27Zt21dA27Zt27btV0BJkiRJkmRaQJIkSZIkyVtAkiRJkiQJXUBu27Zt27ZaQJIkSZIkyVRAt23btm0bU0CSJEmSJMlOQJIkSZIkyU1At23btm1bUEBJkiRJkqRMQG7btm3bdlBAt23btm1bUEAlSZIkSZJPQEmSJEmSpFBAbtu2bds2TkBJkiRJkiRJQNu2bdu2bUlAt23btm3bRUC3bdu2bVtDQG7btm3btkVA27Zt27ZtSEBu27Zt2zZPQCVJkiRJEkxASZIkSZIkUUDbtm3btu1NQJIkSZIkSUxAkiRJkiRJSUAlSZIkSZJGQCVJkiRJkkJAAAAAAACARUBu27Zt2zZFQCVJkiRJkktAkiRJkiTJTkAAAAAAAIBNQNu2bdu2bUxAkiRJkiRJTUC3bdu2bdtNQG7btm3bNklAJUmSJEkSS0Bu27Zt2zZOQAAAAAAAQFBA27Zt27atUUDbtm3btm1PQNu2bdu2bVBAt23btm3bT0C3bdu2bdtNQAAAAAAAgExAbtu2bdv2UEBJkiRJkmRRQLdt27ZtG1VASZIkSZKkUkC3bdu2bVtVQCVJkiRJ0lNAbtu2bdv2UkC3bdu2bdtPQLdt27Ztm1BAt23btm3bUEDbtm3bti1TQJIkSZIkSVJAAAAAAACAVECSJEmSJIldQEmSJEmS5F5AAAAAAACAYECSJEmSJElgQJIkSZIkyWFAAAAAAAAAYUDbtm3btm1gQG7btm3b9lhA27Zt27ZtVkBu27Zt2/ZSQG7btm3bNlBA27Zt27ZtVEAlSZIkSVJaQNu2bdu27VtAAAAAAAAAYEC3bdu2bdtgQLdt27ZtO2JA27Zt27atY0Bu27Zt2xZiQAAAAAAAAF5A27Zt27atWkBu27Zt23ZUQLdt27ZtW1NAkiRJkiQJUEBJkiRJkiRGQLdt27Zt2zJASZIkSZIkKUDbtm3btm02QG7btm3btj9AJUmSJEkSRUC3bdu2bVtPQCVJkiRJElVA27Zt27ZtWUBJkiRJkmRbQNu2bdu27VlAJUmSJElSV0AAAAAAAABVQNu2bdu2bVJAJUmSJEkSSkAAAAAAAABEQA=="},"type":"scatter"}],
+              {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"margin":{"l":40,"r":20,"t":60,"b":40},"title":{"text":"\u6211\u4eec\u7684\u804a\u5929\u751c\u5ea6\u66f2\u7ebf"},"xaxis":{"title":{"text":"\u65e5\u671f"}},"yaxis":{"title":{"text":"\u5fc3\u52a8\u503c"}},"hovermode":"x unified","height":480},
+              {"responsive": true}
+            );
+          } catch(e) {
+            console.warn('甜度曲线图表加载失败:', e);
+            document.getElementById("eb870060-1ebb-408d-b56d-4c0993b58976").innerHTML = '<p style="text-align:center;padding:40px;color:var(--muted)">图表加载失败，请刷新后重试</p>';
+          }}
+        </script>
+      </div>
+    </div>
+    <div class="card anim-up" style="animation-delay:.3s">
+      <h2>心动峰值日</h2>
+      <div class="big-num">2026-02-17</div>
+      <p style="margin-top:8px">这一天的心动值是 <b>754</b>，一共聊了 <b>846</b> 条消息。</p>
+      <p class="muted" style="margin-top:10px">最长连续聊天：2025-09-25 → 2026-06-29，共 278 天</p>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ====== 第4页：我们的声音 ====== -->
+<div class="slide" data-index="3">
+<div class="slide-inner">
+  <h2 class="anim-up" style="animation-delay:0s">👫 我们的声音</h2>
+  <div class="grid3">
+    <div class="card anim-up" style="animation-delay:.15s">
+      <h2>小杰同学</h2>
+      <div class="big-num">29,249</div>
+      <p class="muted">发出的消息数</p>
+    </div>
+    <div class="card anim-up" style="animation-delay:.3s">
+      <h2>小萌同学</h2>
+      <div class="big-num">33,925</div>
+      <p class="muted">发出的消息数</p>
+    </div>
+    <div class="card anim-up" style="animation-delay:.45s">
+      <h2>🌙 舍不得睡</h2>
+      <div class="big-num">16,219</div>
+      <p class="muted">凌晨 0-5 点的聊天消息</p>
+    </div>
+  </div>
+  <p class="muted anim-up" style="animation-delay:.6s;text-align:center;margin-top:16px">
+    你们俩话一样多，双向奔赴 💛
+  </p>
+</div>
+</div>
+
+<!-- ====== 第5页：聊天节奏 ====== -->
+<div class="slide" data-index="4">
+<div class="slide-inner">
+  <h2 class="anim-up" style="animation-delay:0s">⏰ 聊天节奏</h2>
+  <div class="grid2">
+    <div class="card anim-up" style="animation-delay:.15s">
+      <div style="height:420px; width:100%;">
+        <div id="1fadc8ab-a26f-403c-805a-88f92cb00531" class="plotly-graph-div" style="height:100%; width:100%;"></div>
+        <script>
+          window.PLOTLYENV=window.PLOTLYENV || {};
+          if (document.getElementById("1fadc8ab-a26f-403c-805a-88f92cb00531")) { try {
+            Plotly.newPlot(
+              "1fadc8ab-a26f-403c-805a-88f92cb00531",
+              [{"name":"\u5b50\u4e66\u5b66\u6d45","x":{"dtype":"i1","bdata":"AAECAwQFBgcICQoLDA0ODxAREhMUFRYX"},"y":{"dtype":"i2","bdata":"fAg1CpIGdQMDAUQAGwBbAMEBDgMKBcIG0AZ7B5wGwAVJBSAFfAQLBTgF4gR8BAQG"},"type":"bar"},{"name":"\u5b50\u4e66\u6d45\u840c","x":{"dtype":"i1","bdata":"AAECAwQFBgcICQoLDA0ODxAREhMUFRYX"},"y":{"dtype":"i2","bdata":"OwnhC14HqwMWASEADQBaAAECdANiBrMIWgjICN0HywYrBssFMgU2BpMFRAUPBSoH"},"type":"bar"}],
+              {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"margin":{"l":40,"r":20,"t":60,"b":40},"title":{"text":"\u4e00\u5929\u4e2d\u6211\u4eec\u6700\u5e38\u804a\u5929\u7684\u65f6\u95f4"},"xaxis":{"title":{"text":"\u5c0f\u65f6"}},"yaxis":{"title":{"text":"\u6d88\u606f\u6570"}},"barmode":"group","height":420},
+              {"responsive": true}
+            );
+          } catch(e) {
+            console.warn('聊天节奏图表加载失败:', e);
+            document.getElementById("1fadc8ab-a26f-403c-805a-88f92cb00531").innerHTML = '<p style="text-align:center;padding:40px;color:var(--muted)">图表加载失败，请刷新后重试</p>';
+          }}
+        </script>
+      </div>
+    </div>
+    <div class="card anim-up" style="animation-delay:.3s">
+      <h2>⚡ 秒回默契</h2>
+      <p><span class="big-num">20950</span></p>
+      <p>我们有这么多次在 1 分钟内接住了对方的话。</p>
+      <p class="muted" style="margin-top:12px">平均回复间隔约 7.8 分钟<br/>中位数约 0.3 分钟<br/>最长连续秒回：164 次</p>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ====== 第6页：第一次 ====== -->
+<div class="slide" data-index="5">
+<div class="slide-inner">
+  <h2 class="anim-up" style="animation-delay:0s">🌟 第一次</h2>
+  <p class="muted anim-up" style="animation-delay:.1s;margin-bottom:14px">每个「第一次」都是我们故事的重要节点</p>
+  <div class="bubble-scatter">
+      <div class="bubble bubble-pink bubble-large" style="animation-delay:0.05s;animation-duration:3.2s">
+        <div class="bubble-time">2025-10-09 05:03</div>
+        <div class="bubble-title">第一次「早安」💛</div>
+        <div class="bubble-text">小杰同学：早安安了</div>
+      </div>
+      <div class="bubble bubble-purple bubble-medium" style="animation-delay:0.12s;animation-duration:3.8s">
+        <div class="bubble-time">2025-09-26 01:12</div>
+        <div class="bubble-title">第一次「晚安」🌙</div>
+        <div class="bubble-text">小杰同学：晚安安</div>
+      </div>
+      <div class="bubble bubble-pink bubble-medium" style="animation-delay:0.19s;animation-duration:4.2s">
+        <div class="bubble-time">2025-10-14 01:03</div>
+        <div class="bubble-title">第一次「想你」💕</div>
+        <div class="bubble-text">小杰同学：想你</div>
+      </div>
+      <div class="bubble bubble-purple bubble-small" style="animation-delay:0.26s;animation-duration:3.5s">
+        <div class="bubble-time">2025-11-03 14:23</div>
+        <div class="bubble-title">第一次「想你了」</div>
+        <div class="bubble-text">小杰同学：想你了</div>
+      </div>
+      <div class="bubble bubble-pink bubble-large" style="animation-delay:0.33s;animation-duration:4.0s">
+        <div class="bubble-time">2025-09-25 23:47</div>
+        <div class="bubble-title">第一次「喜欢你」💖</div>
+        <div class="bubble-text">小杰同学：我就特别喜欢你的风格</div>
+      </div>
+      <div class="bubble bubble-gold bubble-large" style="animation-delay:0.40s;animation-duration:3.6s">
+        <div class="bubble-time">2025-10-14 11:36</div>
+        <div class="bubble-title">第一次「爱你」❤️</div>
+        <div class="bubble-text">小杰同学：除了我 其他人都想把你做成脆皮五花肉…只有我是真的爱你</div>
+      </div>
+      <div class="bubble bubble-pink bubble-medium" style="animation-delay:0.47s;animation-duration:4.1s">
+        <div class="bubble-time">2025-09-30 21:36</div>
+        <div class="bubble-title">第一次「宝宝」👶</div>
+        <div class="bubble-text">小杰同学：宝宝巴士</div>
+      </div>
+      <div class="bubble bubble-purple bubble-small" style="animation-delay:0.54s;animation-duration:3.3s">
+        <div class="bubble-time">2025-09-30 21:24</div>
+        <div class="bubble-title">第一次「宝贝」</div>
+        <div class="bubble-text">小杰同学：你是他宝贝学生</div>
+      </div>
+      <div class="bubble bubble-gold bubble-medium" style="animation-delay:0.61s;animation-duration:3.9s">
+        <div class="bubble-time">2026-01-31 19:59</div>
+        <div class="bubble-title">第一次「老婆」💍</div>
+        <div class="bubble-text">小杰同学：老婆~</div>
+      </div>
+      <div class="bubble bubble-pink bubble-small" style="animation-delay:0.68s;animation-duration:4.4s">
+        <div class="bubble-time">2025-10-21 02:14</div>
+        <div class="bubble-title">第一次「抱抱」🤗</div>
+        <div class="bubble-text">小杰同学：牵手抱抱比较生疏</div>
+      </div>
+      <div class="bubble bubble-purple bubble-small" style="animation-delay:0.75s;animation-duration:3.7s">
+        <div class="bubble-time">2025-10-14 01:06</div>
+        <div class="bubble-title">第一次「亲亲」💋</div>
+        <div class="bubble-text">小杰同学：想睡觉啦，亲亲的后劲</div>
+      </div>
+      <div class="bubble bubble-pink bubble-small" style="animation-delay:0.82s;animation-duration:4.3s">
+        <div class="bubble-time">2025-10-14 01:07</div>
+        <div class="bubble-title">第一次「贴贴」✨</div>
+        <div class="bubble-text">小杰同学：想贴贴</div>
+      </div>
+  </div>
+</div>
+</div>
+
+<!-- ====== 第7页：甜蜜印记 ====== -->
+<div class="slide" data-index="6">
+<div class="slide-inner">
+  <h2 class="anim-up" style="animation-delay:0s">💬 甜蜜印记</h2>
+  <p class="muted anim-up" style="animation-delay:.1s;margin-bottom:10px">每一个词都是我们爱的频率</p>
+  <div class="card-glass anim-up" style="animation-delay:.2s;margin-bottom:16px">
+    <h3 style="font-size:16px;color:var(--pink);margin-bottom:12px">💖 高频甜蜜词</h3>
+    <div class="bubble-scatter" id="sweetBubbles">
+      <div class="bubble-tag" style="width:120px;height:120px;background:linear-gradient(135deg,#ff5f8f,#ff8aab);animation-delay:0.0s;animation-duration:3.5s;font-size:18px">宝宝<br><small>6534</small></div>
+      <div class="bubble-tag" style="width:102px;height:102px;background:linear-gradient(135deg,#ff8aab,#ffb3c9);animation-delay:0.08s;animation-duration:4.1s;font-size:14px">哈哈哈<br><small>2512</small></div>
+      <div class="bubble-tag" style="width:90px;height:90px;background:linear-gradient(135deg,#ffb3c9,#ffd0de);animation-delay:0.16s;animation-duration:3.8s;font-size:13px">嘛<br><small>1694</small></div>
+      <div class="bubble-tag" style="width:82px;height:82px;background:linear-gradient(135deg,#ff5f8f,#ff7099);animation-delay:0.24s;animation-duration:4.5s;font-size:13px">晚安<br><small>604</small></div>
+      <div class="bubble-tag" style="width:76px;height:76px;background:linear-gradient(135deg,#ff7099,#ff95b5);animation-delay:0.32s;animation-duration:3.3s;font-size:12px">宝贝<br><small>358</small></div>
+      <div class="bubble-tag" style="width:72px;height:72px;background:linear-gradient(135deg,#ffb3c9,#fecdd6);animation-delay:0.40s;animation-duration:4.7s;font-size:12px">哈哈<br><small>328</small></div>
+      <div class="bubble-tag" style="width:78px;height:78px;background:linear-gradient(135deg,#ff5f8f,#ff6b94);animation-delay:0.48s;animation-duration:3.9s;font-size:13px">亲亲<br><small>192</small></div>
+      <div class="bubble-tag" style="width:72px;height:72px;background:linear-gradient(135deg,#ff95b5,#fab6c5);animation-delay:0.56s;animation-duration:4.3s;font-size:12px">开心<br><small>172</small></div>
+      <div class="bubble-tag" style="width:68px;height:68px;background:linear-gradient(135deg,#ff5f8f,#f9789b);animation-delay:0.64s;animation-duration:3.6s;font-size:11px">爱你<br><small>94</small></div>
+      <div class="bubble-tag" style="width:64px;height:64px;background:linear-gradient(135deg,#ffb3c9,#fbc1d2);animation-delay:0.72s;animation-duration:4.9s;font-size:11px">乖<br><small>83</small></div>
+      <div class="bubble-tag" style="width:60px;height:60px;background:linear-gradient(135deg,#ff7099,#fb90b1);animation-delay:0.80s;animation-duration:3.7s;font-size:10px">可爱<br><small>66</small></div>
+      <div class="bubble-tag" style="width:56px;height:56px;background:linear-gradient(135deg,#ffd0de,#fde0e8);animation-delay:0.88s;animation-duration:4.4s;font-size:10px">快乐<br><small>58</small></div>
+    </div>
+  </div>
+  <div class="card-glass anim-up" style="animation-delay:.35s">
+    <h3 style="font-size:16px;color:var(--purple);margin-bottom:12px">📎 聊天关键词</h3>
+    <div class="bubble-scatter" id="keywordBubbles">
+      <div class="bubble-tag" style="width:86px;height:86px;background:linear-gradient(135deg,#8b5cf6,#a78bfa);animation-delay:0.0s;animation-duration:4.0s;font-size:11px">好嘟<br><small>1160</small></div>
+      <div class="bubble-tag" style="width:78px;height:78px;background:linear-gradient(135deg,#a78bfa,#c4b5fd);animation-delay:0.07s;animation-duration:3.5s;font-size:11px">voice<br><small>798</small></div>
+      <div class="bubble-tag" style="width:76px;height:76px;background:linear-gradient(135deg,#c4b5fd,#ddd6fe);animation-delay:0.14s;animation-duration:4.3s;font-size:10px">链接<br><small>419</small></div>
+      <div class="bubble-tag" style="width:74px;height:74px;background:linear-gradient(135deg,#8b5cf6,#9f7bf6);animation-delay:0.21s;animation-duration:3.8s;font-size:11px">是的<br><small>394</small></div>
+      <div class="bubble-tag" style="width:72px;height:72px;background:linear-gradient(135deg,#a78bfa,#bbb0fd);animation-delay:0.28s;animation-duration:4.6s;font-size:11px">好的<br><small>263</small></div>
+      <div class="bubble-tag" style="width:70px;height:70px;background:linear-gradient(135deg,#c4b5fd,#d5c9fe);animation-delay:0.35s;animation-duration:3.3s;font-size:10px">撤回<br><small>239</small></div>
+      <div class="bubble-tag" style="width:68px;height:68px;background:linear-gradient(135deg,#8b5cf6,#9575f8);animation-delay:0.42s;animation-duration:4.9s;font-size:10px">文件<br><small>238</small></div>
+      <div class="bubble-tag" style="width:66px;height:66px;background:linear-gradient(135deg,#a78bfa,#b8a8fc);animation-delay:0.49s;animation-duration:3.7s;font-size:10px">通话<br><small>211</small></div>
+      <div class="bubble-tag" style="width:66px;height:66px;background:linear-gradient(135deg,#c4b5fd,#cec3fd);animation-delay:0.56s;animation-duration:4.2s;font-size:10px">嗯嗯<br><small>209</small></div>
+      <div class="bubble-tag" style="width:64px;height:64px;background:linear-gradient(135deg,#8b5cf6,#9e80f7);animation-delay:0.63s;animation-duration:3.6s;font-size:10px">宝宝<br><small>243</small></div>
+      <div class="bubble-tag" style="width:58px;height:58px;background:linear-gradient(135deg,#a78bfa,#b7a5fc);animation-delay:0.70s;animation-duration:4.5s;font-size:9px">香香<br><small>117</small></div>
+      <div class="bubble-tag" style="width:58px;height:58px;background:linear-gradient(135deg,#c4b5fd,#d4c6fe);animation-delay:0.77s;animation-duration:3.9s;font-size:9px">到啦<br><small>113</small></div>
+      <div class="bubble-tag" style="width:56px;height:56px;background:linear-gradient(135deg,#8b5cf6,#9472f7);animation-delay:0.84s;animation-duration:4.1s;font-size:9px">晚安安<br><small>104</small></div>
+      <div class="bubble-tag" style="width:54px;height:54px;background:linear-gradient(135deg,#a78bfa,#b09efb);animation-delay:0.91s;animation-duration:3.4s;font-size:9px">好嘞<br><small>93</small></div>
+      <div class="bubble-tag" style="width:52px;height:52px;background:linear-gradient(135deg,#ddd6fe,#ede9fe);animation-delay:0.98s;animation-duration:4.8s;font-size:8px">www<br><small>91</small></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ====== 第8页：回忆盲盒 ====== -->
+<div class="slide" data-index="7">
+<div class="slide-inner">
+  <h2 class="anim-up" style="animation-delay:0s">🎲 回忆盲盒</h2>
+  <p class="muted anim-up" style="animation-delay:.1s;margin-bottom:10px">随机抽取的聊天片段，点一下「再抽一次」刷新回忆</p>
+<button class="btn-reroll" id="btnReroll">🎲 再抽一次</button>
+  <div class="bubble-scatter" id="memoryContainer"></div>
+</div>
+</div>
+
+<!-- ====== 第9页：数据情书 ====== -->
+<div class="slide" data-index="8">
+<div class="slide-inner">
+  <h2 class="anim-up" style="animation-delay:0s">💌 一封数据情书</h2>
+  <div class="letter anim-up" style="animation-delay:.2s">
+    <p>我们一共说了 <b>63,174</b> 句话，在 <b>281</b> 个日子里分享过生活。</p>
+    <p>最甜的一天是 <b>2026-02-17</b>，那一天的心动值高达 <b>754</b>；
+       聊得最多的一天是 <b>2025-10-09</b>，我们来回发了 <b>1614</b> 条消息。</p>
+    <p>数据说，我们有 <b>16,219</b> 条消息发生在凌晨，有 <b>20950</b> 次在一分钟内回复彼此。
+       可我知道，数字不是重点——重点是每一条消息背后，都是「我和你」。</p>
+    <p>这些聊天记录，是我们共同谱写的、最长的情书。</p>
+  </div>
+</div>
+</div>
+
+<!-- ====== 第10页：生日祝福 ====== -->
+<div class="slide" data-index="9">
+<div class="slide-inner">
+  <h2 class="anim-up" style="animation-delay:0s">🎂 生日快乐</h2>
+  <div class="birthday-page" id="birthdayPage">
+    <div class="hearts" id="heartsContainer"></div>
+    <div class="anim-up" style="animation-delay:.2s">
+      <div class="birthday-title">🎉 生日快乐 🎉</div>
+    </div>
+    <div class="anim-up" style="animation-delay:.45s">
+      <div class="birthday-name">宝梓</div>
+    </div>
+    <div class="birthday-msg anim-up" style="animation-delay:.7s">
+      <p>亲爱的 宝梓，</p>
+      <p>从 <b>2025年09月18日</b> 的第一条消息开始，<br/>
+         我们已经一起走过了 <b>281</b> 个有彼此的日子。</p>
+      <p>每一天的早安晚安，每一次秒回，<br/>每一个舍不得睡的凌晨，都是我爱你的证据。</p>
+      <p style="font-size:18px;font-weight:700;color:var(--pink);margin-top:16px">
+        ✨ 愿你每一天都被温柔以待，生日快乐！✨
+      </p>
+    </div>
+  </div>
+</div>
+</div>
+
+</div><!-- /slider -->
+</div><!-- /stage -->
+
+<!-- 导航栏 -->
+<div class="nav-bar">
+  <button class="btn-nav prev" id="btnPrev" disabled>← 上一页</button>
+  <span id="dots"></span>
+  <button class="btn-nav next" id="btnNext">下一页 →</button>
+</div>
+
+<script>
+(function(){
+var TOTAL = 10;
+var current = 0;
+var canSwipe = true;
+var slider = document.getElementById('slider');
+var btnPrev = document.getElementById('btnPrev');
+var btnNext = document.getElementById('btnNext');
+var hint = document.getElementById('hint');
+var dotsContainer = document.getElementById('dots');
+var counted = new Set();
+var birthdayFired = false;
+
+// 生成圆点
+for(var i=0;i<TOTAL;i++){
+  var d = document.createElement('button');
+  d.className = 'dot' + (i===0 ? ' active' : '');
+  d.onclick = (function(idx){return function(){goTo(idx)}})(i);
+  dotsContainer.appendChild(d);
+}
+
+// 显示提示
+setTimeout(function(){hint.className='hint show'},800);
+setTimeout(function(){hint.className='hint'},4000);
+
+function updateNav(){
+  btnPrev.disabled = current === 0;
+  btnNext.disabled = current === 9;
+  var dots = dotsContainer.querySelectorAll('.dot');
+  dots.forEach(function(d,i){d.className='dot'+(i===current?' active':'')});
+}
+
+function goTo(idx){
+  if(idx===current||idx<0||idx>=TOTAL||!canSwipe)return;
+  canSwipe=false;
+  current=idx;
+  slider.style.transform='translateX(-'+ (current*100) +'vw)';
+  updateNav();
+  setTimeout(function(){canSwipe=true},600);
+  // 触发入场动画
+  triggerAnimations(idx);
+  // 生日页特效
+  if(idx===9 && !birthdayFired){
+    birthdayFired=true;
+    setTimeout(spawnHearts,500);
+    setTimeout(spawnFirework,900);
+  }
+}
+
+function triggerAnimations(idx){
+  var slide = slider.querySelectorAll('.slide')[idx];
+  if(!slide)return;
+  // 重置所有动画元素
+  var els = slide.querySelectorAll('.anim-up,.anim-pop,.anim-left,.timeline-item,.memory-card,.tag');
+  els.forEach(function(el){
+    el.style.animation='none';
+    el.offsetHeight; // force reflow
+    el.style.animation='';
+  });
+  // 触发 countUp
+  var countEls = slide.querySelectorAll('.stat-val[data-count]');
+  countEls.forEach(function(el){
+    var target = parseInt(el.getAttribute('data-count'))||0;
+    var key = el.textContent + '-' + target;
+    if(!counted.has(key)){
+      counted.add(key);
+      countUp(el,0,target,1200);
+    }else{
+      el.textContent = target.toLocaleString();
+    }
+  });
+}
+
+function countUp(el, start, end, duration){
+  var startTime = null;
+  function step(timestamp){
+    if(!startTime)startTime=timestamp;
+    var progress=Math.min((timestamp-startTime)/duration,1);
+    var eased=1-Math.pow(1-progress,3);
+    var val=Math.floor(start+(end-start)*eased);
+    el.textContent=val.toLocaleString();
+    if(progress<1)requestAnimationFrame(step);
+    else el.textContent=end.toLocaleString();
+  }
+  requestAnimationFrame(step);
+}
+
+// 键盘
+document.addEventListener('keydown',function(e){
+  if(e.key==='ArrowRight'||e.key==='ArrowDown'){e.preventDefault();goTo(current+1)}
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp'){e.preventDefault();goTo(current-1)}
+});
+
+// 触摸滑动 - 优先允许 slide-inner 内部垂直滚动，到底/到顶后才切页
+var touchStartX=0,touchStartY=0,touchStartTarget=null;
+document.addEventListener('touchstart',function(e){
+  touchStartX=e.touches[0].clientX;touchStartY=e.touches[0].clientY;
+  touchStartTarget=e.target;
+},{passive:true});
+document.addEventListener('touchend',function(e){
+  var dx=e.changedTouches[0].clientX-touchStartX;
+  var dy=e.changedTouches[0].clientY-touchStartY;
+  // 垂直滑动为主时，检查是否在可滚动的 slide-inner 内
+  if(Math.abs(dy)>Math.abs(dx)){
+    var scrollContainer = touchStartTarget ? touchStartTarget.closest('.slide-inner') : null;
+    if(scrollContainer){
+      var canScrollDown = scrollContainer.scrollTop + scrollContainer.clientHeight < scrollContainer.scrollHeight - 2;
+      var canScrollUp = scrollContainer.scrollTop > 2;
+      if((dy < 0 && canScrollUp) || (dy > 0 && canScrollDown)){
+        return; // 让原生滚动处理
+      }
+    }
+  }
+  if(Math.abs(dx)<50||Math.abs(dy)>Math.abs(dx))return;
+  if(dx<0)goTo(current+1);else goTo(current-1);
+});
+
+// 鼠标滚轮 - 优先允许 slide-inner 内部滚动，到底后才切页
+var wheelTimeout;
+document.addEventListener('wheel',function(e){
+  // 检查事件是否来自可滚动的 slide-inner 内部
+  var scrollContainer = e.target.closest('.slide-inner');
+  if(scrollContainer){
+    var canScrollDown = scrollContainer.scrollTop + scrollContainer.clientHeight < scrollContainer.scrollHeight - 2;
+    var canScrollUp = scrollContainer.scrollTop > 2;
+    if((e.deltaY > 0 && canScrollDown) || (e.deltaY < 0 && canScrollUp)){
+      return; // 让原生滚动处理
+    }
+  }
+  if(wheelTimeout)return;
+  wheelTimeout=setTimeout(function(){wheelTimeout=null},800);
+  if(Math.abs(e.deltaX)>Math.abs(e.deltaY))return;
+  if(e.deltaY>30)goTo(current+1);
+  else if(e.deltaY<-30)goTo(current-1);
+},{passive:true});
+
+// ---- 回忆盲盒数据池与重抽 ----
+var memoryPool = [
+  {time:'2026-02-22 10:29',sender:'小杰同学',text:'萌萌宝宝是最乖的宝宝，是我最好的乖宝宝～是我最爱的乖宝宝',color:'pink'},
+  {time:'2026-03-10 00:53',sender:'小杰同学',text:'小宝是我今天学习一天没抱抱宝宝，没给宝宝捏捏脖子，锻炼的时候对宝宝喘大气了好不好',color:'purple'},
+  {time:'2025-10-25 08:37',sender:'小萌同学',text:'宝宝宝宝宝宝宝宝',color:'pink'},
+  {time:'2026-05-17 13:45',sender:'小萌同学',text:'宝宝宝宝宝宝宝宝',color:'gold'},
+  {time:'2025-12-20 02:24',sender:'小杰同学',text:'乖宝宝肯定会枕着亲亲宝贝买的枕头的',color:'purple'},
+  {time:'2026-02-02 22:30',sender:'小萌同学',text:'想香香和宝宝亲亲贴贴睡觉觉',color:'pink'},
+  {time:'2026-02-20 20:11',sender:'小杰同学',text:'我相信宝宝，但我也担心宝宝，以及会吃醋，宝宝好好玩叭',color:'purple'},
+  {time:'2025-12-09 03:03',sender:'小杰同学',text:'爱你呀亲亲宝宝',color:'pink'},
+  {time:'2025-10-17 18:15',sender:'小杰同学',text:'宝宝的宝宝就是我的宝宝',color:'purple'},
+  {time:'2025-10-18 11:39',sender:'小萌同学',text:'宝宝宝宝宝宝',color:'pink'},
+  {time:'2025-10-21 11:18',sender:'小萌同学',text:'爱你爱你爱你',color:'gold'},
+  {time:'2025-12-09 03:06',sender:'小萌同学',text:'爱你爱你超级爱你',color:'pink'},
+  {time:'2025-10-01 22:15',sender:'小杰同学',text:'今天陪宝宝聊天是我最开心的事',color:'purple'},
+  {time:'2025-11-15 14:22',sender:'小萌同学',text:'好想抱抱你呀，虽然隔着屏幕但是心在一起',color:'pink'},
+  {time:'2026-01-08 19:40',sender:'小杰同学',text:'宝宝今天有没有好好吃饭呀，要照顾好自己',color:'purple'},
+  {time:'2026-03-25 21:10',sender:'小萌同学',text:'和你在一起的每一天都闪闪发光',color:'gold'},
+  {time:'2025-12-31 23:55',sender:'小杰同学',text:'跨年了！新的一年也要一直在一起哦',color:'pink'},
+  {time:'2026-04-12 10:08',sender:'小萌同学',text:'听到一首歌就想到了宝宝，分享给你',color:'purple'},
+  {time:'2025-10-28 17:33',sender:'小杰同学',text:'今天路上看到可爱的小狗，像宝宝一样可爱',color:'pink'},
+  {time:'2026-02-14 00:01',sender:'小萌同学',text:'情人节快乐！遇见你是我最幸运的事',color:'gold'},
+  {time:'2025-11-22 11:06',sender:'小杰同学',text:'宝宝发的每一张图片我都保存了',color:'purple'},
+  {time:'2026-05-20 13:14',sender:'小萌同学',text:'520快乐呀，最爱你了',color:'pink'},
+  {time:'2025-12-24 20:30',sender:'小杰同学',text:'平安夜快乐宝宝，要平平安安的',color:'purple'},
+  {time:'2026-01-15 22:22',sender:'小萌同学',text:'晚安宝宝，梦到我哦',color:'pink'},
+  {time:'2026-03-08 08:00',sender:'小杰同学',text:'早安宝宝，新的一天也要元气满满',color:'purple'},
+  {time:'2025-10-31 18:34',sender:'小萌同学',text:'今天突然好想你，看了好久我们的聊天记录',color:'pink'},
+  {time:'2026-04-18 15:50',sender:'小杰同学',text:'等见面了我们一起去吃好吃的，我收藏了好多店',color:'gold'},
+  {time:'2025-11-09 21:41',sender:'小萌同学',text:'你说话的语气真的好温柔，我好喜欢',color:'pink'},
+  {time:'2026-06-10 23:18',sender:'小杰同学',text:'谢谢宝宝一直陪着我，你是我最大的动力',color:'purple'},
+  {time:'2025-10-04 16:05',sender:'小萌同学',text:'今天好累但是看到宝宝消息就开心了',color:'pink'},
+  {time:'2026-01-22 12:00',sender:'小杰同学',text:'想到宝宝在那边等我，做什么都有劲',color:'purple'},
+  {time:'2026-05-05 20:55',sender:'小萌同学',text:'亲亲晚安宝贝，要盖好被子哦',color:'pink'},
+  {time:'2025-11-30 09:12',sender:'小杰同学',text:'早上第一件事就是想宝宝',color:'gold'},
+  {time:'2026-03-18 19:26',sender:'小萌同学',text:'宝宝最好了，没有比你更好的人了',color:'pink'},
+  {time:'2025-12-16 22:48',sender:'小杰同学',text:'今天特别特别想你，等不急想见面了',color:'purple'},
+  {time:'2026-04-02 14:37',sender:'小萌同学',text:'嘻嘻宝宝回我的消息就是今天最开心的事',color:'pink'},
+  {time:'2026-06-18 01:05',sender:'小杰同学',text:'虽然很晚了但就是想和宝宝多说几句话',color:'purple'},
+  {time:'2025-10-14 03:20',sender:'小萌同学',text:'半夜醒了第一个想到的就是宝宝',color:'gold'},
+  {time:'2026-02-08 16:44',sender:'小杰同学',text:'宝宝今天学到什么新东西了？我最爱听宝宝分享',color:'pink'},
+  {time:'2026-05-28 10:30',sender:'小萌同学',text:'好想马上飞过去亲亲抱抱宝宝',color:'purple'},
+  {time:'2025-11-06 18:17',sender:'小杰同学',text:'一想到能见到宝宝我就好激动',color:'pink'},
+  {time:'2026-01-10 21:09',sender:'小萌同学',text:'今天宝宝特别甜，甜到我心里去了',color:'gold'},
+  {time:'2025-12-28 08:45',sender:'小杰同学',text:'早安呀宝宝，猜你还在睡觉吧嘿嘿',color:'purple'},
+  {time:'2026-04-25 19:53',sender:'小萌同学',text:'谢谢宝宝今天这么耐心地陪我',color:'pink'},
+  {time:'2025-10-20 13:01',sender:'小杰同学',text:'我们真是天生一对，聊天都这么合拍',color:'gold'},
+  {time:'2026-06-25 17:09',sender:'小杰同学',text:'宝宝是我遇到的最美好的事情',color:'purple'},
+  {time:'2025-11-18 15:28',sender:'小萌同学',text:'亲亲大宝贝，今天也很喜欢你',color:'pink'}
+];
+
+var lastMemories = null;
+
+function shuffleArray(arr){
+  var a = arr.slice();
+  for(var i=a.length-1;i>0;i--){
+    var j = Math.floor(Math.random()*(i+1));
+    var tmp=a[i];a[i]=a[j];a[j]=tmp;
+  }
+  return a;
+}
+
+function pickRandom(arr, count){
+  var shuffled = shuffleArray(arr);
+  var result = shuffled.slice(0, count);
+  // 确保不与上次完全重复
+  if(lastMemories && result.length===lastMemories.length){
+    var allSame = true;
+    for(var i=0;i<result.length;i++){
+      if(result[i].text !== lastMemories[i].text){allSame=false;break;}
+    }
+    if(allSame && arr.length > count + 3){
+      return pickRandom(arr, count);
+    }
+  }
+  lastMemories = result;
+  return result;
+}
+
+function rerollMemories(){
+  var container = document.getElementById('memoryContainer');
+  if(!container)return;
+  var selected = pickRandom(memoryPool, 9);
+  var sizes = ['bubble-large','bubble-medium','bubble-small'];
+  var durations = [3.2, 3.6, 4.0, 4.4, 3.8, 4.2, 3.5, 3.9, 4.1];
+  var delays = [0.0, 0.06, 0.12, 0.18, 0.24, 0.30, 0.36, 0.42, 0.48];
+  var html = '';
+  for(var i=0;i<selected.length;i++){
+    var m = selected[i];
+    var sz = sizes[i % 3];
+    // 直接使用数据中的 color 字段映射 CSS 类名
+    var cl = m.color==='pink'?'bubble-pink':(m.color==='purple'?'bubble-purple':'bubble-gold');
+    var dur = durations[i];
+    var del = delays[i];
+    html += '<div class="bubble bubble-spin '+cl+' '+sz+'" style="animation-delay:'+del+'s;animation-duration:'+dur+'s"><div class="bubble-time">'+m.time+' · '+m.sender+'</div><div class="bubble-title" style="font-size:12px;line-height:1.35">"'+m.text+'"</div></div>';
+  }
+  container.innerHTML = html;
+  // 重新触发动画
+  var bubbles = container.querySelectorAll('.bubble-spin');
+  bubbles.forEach(function(el){
+    el.style.animation='none';
+    el.offsetHeight;
+    el.style.animation='';
+  });
+}
+
+// 首次加载时渲染
+setTimeout(function(){
+  rerollMemories();
+}, 100);
+
+// ---- 生日页爱心特效 ----
+function spawnHearts(){
+  var container=document.getElementById('heartsContainer');
+  if(!container)return;
+  var emojis=['❤️','💕','💖','💗','💝','🌸','✨','🎀','💫','🌟'];
+  for(var i=0;i<30;i++){
+    var h=document.createElement('span');
+    h.className='heart';
+    h.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+    h.style.left=Math.random()*100+'%';
+    h.style.fontSize=(16+Math.random()*28)+'px';
+    h.style.animationDuration=(2.5+Math.random()*3.5)+'s';
+    h.style.animationDelay=Math.random()*2+'s';
+    h.style.animationIterationCount='1'; // 单次播放，覆盖 CSS 的 infinite
+    h.addEventListener('animationend',function(){if(h.parentNode)h.parentNode.removeChild(h)});
+    container.appendChild(h);
+  }
+}
+
+// ---- 烟花特效 ----
+function spawnFirework(){
+  var page=document.getElementById('birthdayPage');
+  if(!page)return;
+  var colors=['#ff5f8f','#8b5cf6','#ffb347','#ff6b6b','#ffd93d','#6bcb77','#4d96ff'];
+  for(var b=0;b<3;b++){
+    setTimeout(function(){
+      var cx=30+Math.random()*60;
+      var cy=25+Math.random()*35;
+      for(var i=0;i<40;i++){
+        var p=document.createElement('div');
+        p.className='firework';
+        p.style.left=cx+'%';
+        p.style.top=cy+'%';
+        p.style.background=colors[Math.floor(Math.random()*colors.length)];
+        var angle=Math.random()*Math.PI*2;
+        var dist=40+Math.random()*100;
+        p.style.setProperty('--dx',Math.cos(angle)*dist+'px');
+        p.style.setProperty('--dy',Math.sin(angle)*dist+'px');
+        p.style.animationDuration=(1+Math.random()*.8)+'s';
+        p.addEventListener('animationend',function(){if(p.parentNode)p.parentNode.removeChild(p)});
+        page.appendChild(p);
+      }
+    },b*400);
+  }
+}
+
+// 初始化
+updateNav();
+
+// 绑定按钮事件
+document.getElementById('btnPrev').addEventListener('click',function(){goTo(current-1)});
+document.getElementById('btnNext').addEventListener('click',function(){goTo(current+1)});
+var btnReroll = document.getElementById('btnReroll');
+if(btnReroll)btnReroll.addEventListener('click',function(){rerollMemories()});
+var btnStart=document.getElementById('btnStart');
+if(btnStart)btnStart.addEventListener('click',function(){goTo(1)});
+
+})();
+</script>
+</body>
+</html>

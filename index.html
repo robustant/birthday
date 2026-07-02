@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>萌萌姐签收</title>
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+
+<body>
+  <!-- 背景音乐 -->
+  <audio id="bgMusic" loop preload="auto"></audio>
+
+  <!-- 漂浮花瓣/光点容器 -->
+  <div id="petalLayer" class="petal-layer"></div>
+
+  <!-- 音乐控制 -->
+  <button id="musicToggle" class="music-toggle hidden" aria-label="音乐开关">
+    ♫
+  </button>
+
+  <main>
+    <!-- 1. 开场提示页 -->
+    <section id="intro" class="section intro-section">
+      <div class="soft-glow"></div>
+
+      <div class="intro-card">
+        <p class="eyebrow">For MMJ</p>
+        <h1>生日快乐</h1>
+        <p class="intro-text">
+          宝梓你准备好了嘛<br />
+          来自志杰的小巧思
+        </p>
+        <button id="startBtn" class="primary-btn">
+          准备好了
+        </button>
+      </div>
+
+      <div class="scroll-hint">轻轻点开，故事就开始了</div>
+    </section>
+
+    <!-- 2. 信封情书页 -->
+    <section id="letter" class="section letter-section">
+      <div class="section-inner">
+        <p class="eyebrow">Birthday Letter</p>
+        <h2 class="section-title">给今天最特别的你</h2>
+        <p class="section-subtitle">
+          这里藏着一些关于你、关于我、关于我们的记忆。
+        </p>
+
+        <div id="envelope" class="envelope" role="button" tabindex="0">
+          <div class="paper-preview"></div>
+          <div class="envelope-body"></div>
+          <div class="envelope-left"></div>
+          <div class="envelope-right"></div>
+          <div class="envelope-flap"></div>
+          <div class="heart-seal">❤</div>
+        </div>
+
+        <button id="openLetterBtn" class="secondary-btn">
+          展信
+        </button>
+
+        <article id="letterPaper" class="letter-paper hidden">
+          <div id="letterText" class="letter-text"></div>
+          <button id="toTimelineBtn" class="primary-btn hidden">
+            去看看我们的八个月
+          </button>
+        </article>
+      </div>
+    </section>
+
+    <!-- 3. 八个月时间线 -->
+    <section id="timeline" class="section timeline-section">
+      <div class="section-inner">
+        <p class="eyebrow">Our Timeline</p>
+        <h2 class="section-title">八个月，和你</h2>
+        <p class="section-subtitle">
+          有些瞬间被照片和视频留下，更多瞬间，被我偷偷放在心里。
+        </p>
+
+        <div id="timelineList" class="timeline-list"></div>
+
+        <div class="timeline-ending reveal">
+          <p>
+            这些只是八个月里的一小部分，<br />
+            但我想记住的，远比这里更多。
+          </p>
+          <button id="toGiftBtn" class="primary-btn">
+            打开最后的生日礼物
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. 生日礼物页 -->
+    <section id="gift" class="section gift-section">
+      <div class="star-layer"></div>
+
+      <div class="gift-content">
+        <p class="eyebrow light">Final Gift</p>
+        <h2 class="gift-title">最后一份礼物</h2>
+        <p class="gift-subtitle">
+          我们的聊天足迹
+        </p>
+
+        <div id="giftBox" class="gift-box" role="button" tabindex="0">
+          <div class="gift-lid">
+            <div class="gift-bow bow-left"></div>
+            <div class="gift-bow bow-right"></div>
+          </div>
+          <div class="gift-body">
+            <div class="gift-ribbon-vertical"></div>
+            <div class="gift-ribbon-horizontal"></div>
+          </div>
+        </div>
+
+        <p class="gift-tip">打开礼物盒叭</p>
+      </div>
+    </section>
+
+    <!-- 5. 余韵结尾页 -->
+    <section id="ending" class="section ending-section">
+      <div class="star-layer"></div>
+
+      <div class="ending-card">
+        <p class="eyebrow light">To Be Continued</p>
+        <div id="endingText" class="ending-text"></div>
+
+        <div class="ending-actions">
+          <button id="backTimelineBtn" class="ghost-btn">回到时间线</button>
+          <button id="backTopBtn" class="ghost-btn">回到开头</button>
+        </div>
+
+        <p id="lastUpdated" class="last-updated"></p>
+      </div>
+    </section>
+  </main>
+  <script src="./js/main.js"></script>
+</body>
+</html>
